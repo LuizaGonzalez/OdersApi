@@ -61,3 +61,30 @@ Order Management API: Java 17 + Maven on AWS Lambda, exposed via API Gateway (ma
   como stack traces, nombres de clases o información de la infraestructura, porque exponerlos es un riesgo de seguridad
   y no le sirve al cliente. Todos los errores usan el mismo formato, para que quien consuma la API pueda manejarlos de
   manera uniforme.
+
+## Fase 2: Implementar la aplicación en Java puro
+
+- ¿Se puede probar la funcionalidad de la aplicación sin AWS?
+
+R/:Sí, toda la lógica de pedidos es Java, así que las pruebas se pueden ejecutar en el mismo computador con mvn test, solo
+se necesita JUnit, y no hace falta cuenta de AWS, internet ni el servicio desplegado.
+
+- ¿Tu aplicación requiere un servidor web?
+
+R/: No, la aplicación es un conjunto de clases Java que se pueden llamar directamente desde las pruebas, no escucha en 
+ningún puerto ni atiende peticiones, simplemente recibe objetos y devuelve objetos(POJO).
+
+- ¿Requiere Spring Boot?
+R/:No, El único framework en el proyecto es JUnit, y solo para las pruebas.
+
+- ¿Qué contiene el JAR generado?
+
+R/:Contiene las clases ya compiladas del proyecto (Order, CreateOrderRequest, OrderService y las dos excepciones) junto
+con un archivo de manifiesto con metadatos. Por ahora no trae librerías de terceros, porque el proyecto no depende 
+de ninguna en producción. Más adelante, cuando agreguemos las librerías de AWS Lambda, el JAR tendrá que incluirlas.
+
+- ¿Qué partes de tu aplicación conocen actualmente HTTP?
+
+R/:Ninguna. En este punto no existen los códigos de estado, los headers ni las rutas. Lo único que tenemos son
+excepciones propias del dominio, como “pedido no encontrado” o “pedido inválido”, que describen qué salió mal en 
+términos del negocio.
