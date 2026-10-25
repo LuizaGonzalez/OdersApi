@@ -1,0 +1,32 @@
+{
+  "resource": "/orders",
+  "path": "/orders",
+  "httpMethod": "POST",
+  "headers": {
+    "Content-Type": "application/json",
+    "Accept": "*/*",
+    "Host": "XXXX.execute-api.us-east-1.amazonaws.com",
+    "User-Agent": "curl/8.4.0",
+    "X-Forwarded-Port": "443",
+    "X-Forwarded-Proto": "https"
+  },
+  "multiValueHeaders": {
+    "Content-Type": ["application/json"],
+    "Accept": ["*/*"],
+    "Host": ["XXXX.execute-api.us-east-1.amazonaws.com"]
+  },
+  "queryStringParameters": null,
+  "multiValueQueryStringParameters": null,
+  "pathParameters": null,
+  "stageVariables": null,
+  "requestContext": {
+    "resourcePath": "/orders",
+    "httpMethod": "POST",
+    "path": "/dev/orders",
+    "stage": "dev",
+    "requestId": "c6af9ac6-7b61-11e6-9a41-93e8deadbeef",
+    "apiId": "XXXX"
+  },
+  "body": "{\"customerId\":\"CUST-42\",\"product\":\"Lavadora\",\"quantity\":1}",
+  "isBase64Encoded": false
+}

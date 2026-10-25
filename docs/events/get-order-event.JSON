@@ -1,0 +1,35 @@
+{
+  "resource": "/orders/{id}",
+  "path": "/orders/ORD-001",
+  "httpMethod": "GET",
+  "headers": {
+    "Accept": "*/*",
+    "Host": "XXXX.execute-api.us-east-1.amazonaws.com",
+    "User-Agent": "curl/8.4.0",
+    "X-Amzn-Trace-Id": "Root=1-6ade7639-164e1e8817ca2b6a5e97379d",
+    "X-Forwarded-For": "203.0.113.10",
+    "X-Forwarded-Port": "443",
+    "X-Forwarded-Proto": "https"
+  },
+  "multiValueHeaders": {
+    "Accept": ["*/*"],
+    "Host": ["XXXX.execute-api.us-east-1.amazonaws.com"],
+    "User-Agent": ["curl/8.4.0"]
+  },
+  "queryStringParameters": null,
+  "multiValueQueryStringParameters": null,
+  "pathParameters": {
+    "id": "ORD-001"
+  },
+  "stageVariables": null,
+  "requestContext": {
+    "resourcePath": "/orders/{id}",
+    "httpMethod": "GET",
+    "path": "/dev/orders/ORD-001",
+    "stage": "dev",
+    "requestId": "c6af9ac6-7b61-11e6-9a41-93e8deadbeef",
+    "apiId": "XXXX"
+  },
+  "body": null,
+  "isBase64Encoded": false
+}

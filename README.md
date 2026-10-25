@@ -118,3 +118,43 @@ en camel case de la clase Java (customerId, product, quantity).
 *Fuente:* https://docs.aws.amazon.com/lambda/latest/dg/java-custom-serialization.html
 
 ![lambdaRuntime.png](evidencia/lambdaRuntime.png)
+
+## Parte 3 y 4: Diseñar la interfaz HTTP y mapeo en API Gateway
+
+- ¿De qué es responsable API Gateway actualmente?
+
+R/: En esta primera arquitectura, API Gateway se encarga de recibir las peticiones y enviarlas a la función Lambda que 
+corresponda, dependiendo de lo que se quiera hacer. Por ejemplo, si se quiere crear un pedido, la petición se envía a 
+orders-create; si se quiere consultar un pedido específico, va a orders-get, y si se quieren buscar varios pedidos,
+se envía a orders-search.
+
+También se encarga de extraer la información de la petición, como el ID del pedido que viene en la URL o el customerId
+que se envía como parámetro. Si este último no viene, lo deja como un texto vacío. Después, organiza esa información en
+un JSON con el formato que necesita cada función Lambda para procesarla.
+
+Cuando Lambda devuelve una respuesta, API Gateway se encarga de definir el código de estado correspondiente, por ejemplo,
+200 si todo sale bien, 201 si se crea un pedido, 400 si hay un error en la solicitud o 404 si no se encuentra el pedido. Además, 
+adapta los mensajes de error para que todos tengan el mismo formato, con los campos error y message. Para saber
+qué código de error utilizar, revisa el mensaje que devuelve Lambda y lo compara con unas expresiones regulares.
+
+En pocas palabras, API Gateway conecta las peticiones con las funciones Lambda y se encarga de organizar tanto la 
+información que reciben como las respuestas que devuelven.
+
+**Ventajas**
+
+La mayor ventaja es que el código Java no sabe nada de HTTP. Los handlers reciben un objeto sencillo y devuelven un pedido o una lista de pedidos, sin códigos de estado, headers ni rutas. Esto deja la lógica de negocio muy limpia.
+
+Además, casi no hay código de infraestructura que escribir. No hace falta un adaptador, ni leer eventos de API Gateway, ni armar a mano las respuestas HTTP.
+
+Otra ventaja es que se puede cambiar el contrato sin recompilar. Si quiero cambiar un código de estado o el formato de un error, edito la configuración, vuelvo a desplegar y no toco el JAR.
+
+Por último, cada operación es una Lambda pequeña y aislada, que falla, escala y se despliega por separado.
+
+**Desventajas**
+
+La principal es que una parte importante de la lógica de la API vive en la consola de AWS y no en el repositorio. No se versiona ni se revisa como código, y reproducirla depende de que alguien la haya documentado a mano.
+
+Además, el código HTTP depende del texto del mensaje de error. Si alguien cambia la frase “does not exist” en la excepción de Java, la expresión regular deja de coincidir, el 404 desaparece y el cliente recibe un 200 con el error de Lambda dentro. Es una dependencia frágil y poco visible.
+
+También es difícil de probar de forma local. Las plantillas y las expresiones regulares solo se pueden verificar en AWS, mientras que el código Java se prueba fácilmente con mvn test.
+
