@@ -16,7 +16,7 @@ class OrderServiceTest {
     }
 
     @Test
-    void createsValidOrder() {
+    void shouldCreatesValidOrder() {
         Order order = service.createOrder(new CreateOrderRequest("CUST-42", "Lavadora", 1));
 
         assertEquals("ORD-001", order.getId());
@@ -26,7 +26,7 @@ class OrderServiceTest {
     }
 
     @Test
-    void retrievesExistingOrder() {
+    void shouldRetrievesExistingOrder() {
         Order created = service.createOrder(new CreateOrderRequest("CUST-42", "Celular", 2));
 
         Order found = service.getOrder(created.getId());
@@ -36,14 +36,14 @@ class OrderServiceTest {
     }
 
     @Test
-    void failsWhenOrderDoesNotExist() {
+    void souldFailsWhenOrderDoesNotExist() {
         OrderNotFoundException ex =
                 assertThrows(OrderNotFoundException.class, () -> service.getOrder("ORD-999"));
         assertEquals("Order ORD-999 does not exist", ex.getMessage());
     }
 
     @Test
-    void findsOrdersByCustomer() {
+    void shouldFindsOrdersByCustomer() {
         service.createOrder(new CreateOrderRequest("CUST-42", "Lavadora", 1));
         service.createOrder(new CreateOrderRequest("CUST-7", "Celular", 2));
         service.createOrder(new CreateOrderRequest("CUST-42", "Mouse", 3));
@@ -55,12 +55,12 @@ class OrderServiceTest {
     }
 
     @Test
-    void returnsEmptyListWhenCustomerHasNoOrders() {
+    void shouldReturnsEmptyListWhenCustomerHasNoOrders() {
         assertTrue(service.getOrdersByCustomer("CUST-100").isEmpty());
     }
 
     @Test
-    void rejectsInvalidInput() {
+    void shouldRejectsInvalidInput() {
         assertThrows(InvalidOrderException.class, () -> service.createOrder(null));
         assertThrows(InvalidOrderException.class,
                 () -> service.createOrder(new CreateOrderRequest("", "Mouse", 1)));
@@ -73,7 +73,7 @@ class OrderServiceTest {
     }
 
     @Test
-    void rejectsMissingCustomerIdInSearch() {
+    void ShouldRejectsMissingCustomerIdInSearch() {
         assertThrows(InvalidOrderException.class, () -> service.getOrdersByCustomer(null));
         assertThrows(InvalidOrderException.class, () -> service.getOrdersByCustomer(" "));
     }

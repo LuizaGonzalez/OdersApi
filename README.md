@@ -62,7 +62,7 @@ Order Management API: Java 17 + Maven on AWS Lambda, exposed via API Gateway (ma
   y no le sirve al cliente. Todos los errores usan el mismo formato, para que quien consuma la API pueda manejarlos de
   manera uniforme.
 
-## Fase 2: Implementar la aplicación en Java puro
+## Fase 1: Implementar la aplicación en Java puro
 
 - ¿Se puede probar la funcionalidad de la aplicación sin AWS?
 
@@ -88,3 +88,33 @@ de ninguna en producción. Más adelante, cuando agreguemos las librerías de AW
 R/:Ninguna. En este punto no existen los códigos de estado, los headers ni las rutas. Lo único que tenemos son
 excepciones propias del dominio, como “pedido no encontrado” o “pedido inválido”, que describen qué salió mal en 
 términos del negocio.
+
+## Parte II:Desplegar una función Java en AWS Lambda
+*Prueba1*
+![Test1Lambda.png](evidencia/Test1Lambda.png)
+*Prueba2*
+![Test2Lambda.png](evidencia/Test2Lambda.png)
+*Prueba3*
+![Test3Lambda.png](evidencia/Test3Lambda.png)
+
+- ¿cómo convierte Lambda el JSON en objetos Java y viceversa?
+El runtime de Java de Lambda trae serialización y deserialización por defecto: el JSON de entrada se convierte en un 
+objeto Java y lo que devuelve la función se convierte de nuevo en JSON. Con RequestHandler<I, O>, los tipos genéricos 
+le indican al runtime a qué clases convertir, por eso mi CreateOrderHandler recibe un CreateOrderRequest y devuelve un 
+Order sin que yo escriba código JSON.
+
+El mapeo se hace por nombre: la serialización por defecto espera que las propiedades del JSON coincidan con los nombres 
+en camel case de la clase Java (customerId, product, quantity).
+
+| Experimento | Entrada                                                      | Resultado                                                                                                              |
+|---|--------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------|
+| Entrada válida | {"customerId":"CUST-42","product":"Lavadora","quantity":1}   | **{"id": "ORD-001","customerId": "CUST-42","product": "Lavadora","quantity": 1 }**                                     |
+| Otros valores | {"customerId":"CUST-7","product":"Celular","quantity":2}     | **{"id": "ORD-002","customerId": "CUST-7","product": "Celular","quantity": 2 }**                                       |
+| Validación | {"customerId":"CUST-7","product":"Celular","quantity":0}     | Falla con **errorType: edu.eci.arsw.orders.InvalidOrderException** y **errorMessage: quantity must be greater than 0** |
+| Campo extra | {"customerId":"CUST-7","product":"Peine","quantity":7,"color":"Azul"} | Ignora el color y devuelve el json correspondiente                                                                     |
+| Tipo incorrecto | {"customerId":"CUST-7","product":"Keyboard","quantity":"abc"} | **Falla con errorType: java.lang.RuntimeException, errorMessage: An error occurred during JSON parsing y stackTrace vacío**                                                                                                                   |
+| Objeto vacío |{}                                                            | **Falla con errorType: java.lang.RuntimeException, errorMessage: An error occurred during JSON parsing y stackTrace vacío**                                                                                                         |
+
+*Fuente:* https://docs.aws.amazon.com/lambda/latest/dg/java-custom-serialization.html
+
+![lambdaRuntime.png](evidencia/lambdaRuntime.png)
