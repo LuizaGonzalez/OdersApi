@@ -100,4 +100,37 @@ class OrdersApiHandlerTest {
     void unknownRouteReturns404() {
         assertEquals(404, handler.handleRequest(event("PATCH", "/orders"), null).getStatusCode());
     }
+    private APIGatewayProxyResponseEvent delete(String id) {
+        return handler.handleRequest(
+                event("DELETE", "/orders/{id}").withPathParameters(Map.of("id", id)), null);
+    }
+
+    @Test
+    void shouldDeleteExistingReturns204WithoutBody() {
+        post("{\"customerId\":\"CUST-42\",\"product\":\"Lavadora\",\"quantity\":1}");
+
+        APIGatewayProxyResponseEvent r = delete("ORD-001");
+
+        assertEquals(204, r.getStatusCode());
+        assertNull(r.getBody());
+    }
+
+    @Test
+    void shouldDeleteMissingReturns404() {
+        APIGatewayProxyResponseEvent r = delete("ORD-999");
+
+        assertEquals(404, r.getStatusCode());
+        assertTrue(r.getBody().contains("ORDER_NOT_FOUND"));
+    }
+
+    @Test
+    void shouldDeletedOrderIsNoLongerFound() {
+        post("{\"customerId\":\"CUST-42\",\"product\":\"Lavadora\",\"quantity\":1}");
+        delete("ORD-001");
+
+        APIGatewayProxyResponseEvent r = handler.handleRequest(
+                event("GET", "/orders/{id}").withPathParameters(Map.of("id", "ORD-001")), null);
+
+        assertEquals(404, r.getStatusCode());
+    }
 }

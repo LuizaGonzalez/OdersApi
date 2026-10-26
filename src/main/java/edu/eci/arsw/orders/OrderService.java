@@ -57,4 +57,12 @@ public class OrderService {
             throw new InvalidOrderException("quantity must be greater than 0");
         }
     }
+    public void deleteOrder(String id) {
+        if (id == null || id.isBlank()) {
+            throw new InvalidOrderException("Order id is required");
+        }
+        if (orders.remove(id) == null) {
+            throw new OrderNotFoundException(id);
+        }
+    }
 }

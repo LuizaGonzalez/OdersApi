@@ -1,10 +1,11 @@
 package edu.eci.arsw.orders;
 
-import org.junit.jupiter.api.Test;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import org.junit.jupiter.api.Test;
+
 public class CreateOrderHandlerTest {
+
     @Test
     void shouldCreatesOrderWithoutAwsContext() {
         CreateOrderHandler handler = new CreateOrderHandler();

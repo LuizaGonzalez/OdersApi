@@ -38,6 +38,7 @@ public class OrdersApiHandler
                 if ("GET".equals(method)) return searchOrders(event);
             } else if ("/orders/{id}".equals(resource)) {
                 if ("GET".equals(method)) return getOrder(event);
+                if ("DELETE".equals(method)) return deleteOrder(event);
             }
             return error(404, "ROUTE_NOT_FOUND", "No route for " + method + " " + event.getPath());
 
@@ -70,9 +71,7 @@ public class OrdersApiHandler
 
     private APIGatewayProxyResponseEvent getOrder(APIGatewayProxyRequestEvent event)
             throws JsonProcessingException {
-        Map<String, String> params = event.getPathParameters();
-        String id = params == null ? null : params.get("id");
-        return json(200, service.getOrder(id));
+        return json(200, service.getOrder(pathId(event)));
     }
 
     private APIGatewayProxyResponseEvent searchOrders(APIGatewayProxyRequestEvent event)
@@ -80,6 +79,17 @@ public class OrdersApiHandler
         Map<String, String> params = event.getQueryStringParameters();
         String customerId = params == null ? null : params.get("customerId");
         return json(200, service.getOrdersByCustomer(customerId));
+    }
+    private APIGatewayProxyResponseEvent deleteOrder(APIGatewayProxyRequestEvent event) {
+        service.deleteOrder(pathId(event));
+        return noContent();
+    }
+    private String pathId(APIGatewayProxyRequestEvent event) {
+        Map<String, String> params = event.getPathParameters();
+        return params == null ? null : params.get("id");
+    }
+    private APIGatewayProxyResponseEvent noContent() {
+        return new APIGatewayProxyResponseEvent().withStatusCode(204);
     }
 
     private APIGatewayProxyResponseEvent error(int status, String code, String message) {
@@ -96,4 +106,5 @@ public class OrdersApiHandler
                 .withHeaders(Map.of("Content-Type", "application/json"))
                 .withBody(MAPPER.writeValueAsString(body));
     }
+
 }
