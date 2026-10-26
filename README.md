@@ -276,3 +276,7 @@ Mi razonamiento sobre dónde debe vivir cada responsabilidad fue correcto. Donde
 
 ![pruebasDelete.png](evidencia/pruebasDelete.png)
 
+## Error inesperado
+Cuando ocurre una excepción inesperada, el método handleRequest de OrdersApiHandler no la reconoce en sus catch específicos y la atrapa en el último, catch (Exception e). Ahí la registra en CloudWatch y responde con un 500 y el código INTERNAL_ERROR,
+con un mensaje genérico que no expone detalles internos. Se comprobo por la prueba shouldReturn500WithoutLeakingDetailsOnUnexpectedError de OrdersApiHandlerTest.
+![errorInesperado.png](evidencia/errorInesperado.png)

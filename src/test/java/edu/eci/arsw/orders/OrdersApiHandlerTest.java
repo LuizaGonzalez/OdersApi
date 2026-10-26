@@ -133,4 +133,20 @@ class OrdersApiHandlerTest {
 
         assertEquals(404, r.getStatusCode());
     }
+    @Test
+    void shouldReturn500WithoutLeakingDetailsOnUnexpectedError() {
+        OrdersApiHandler failing = new OrdersApiHandler(new OrderService() {
+            @Override
+            public Order getOrder(String id) {
+                throw new IllegalStateException("boom: secret internal detail");
+            }
+        });
+
+        APIGatewayProxyResponseEvent r = failing.handleRequest(
+                event("GET", "/orders/{id}").withPathParameters(Map.of("id", "ORD-001")), null);
+
+        assertEquals(500, r.getStatusCode());
+        assertTrue(r.getBody().contains("INTERNAL_ERROR"));
+        assertFalse(r.getBody().contains("secret"));
+    }
 }
