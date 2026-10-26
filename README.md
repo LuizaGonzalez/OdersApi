@@ -158,3 +158,87 @@ Además, el código HTTP depende del texto del mensaje de error. Si alguien camb
 
 También es difícil de probar de forma local. Las plantillas y las expresiones regulares solo se pueden verificar en AWS, mientras que el código Java se prueba fácilmente con mvn test.
 
+## Comparación de arquitecturas
+
+- ¿Cuál requirió más configuración de API Gateway?
+
+R/:La Arquitectura A, y por mucho. Para cada una de las tres operaciones tuve que escribir una plantilla de solicitud,
+declarar los códigos de respuesta del método y crear filas de respuesta de integración con su expresión regular y su 
+plantilla de error. Además, el 201 del POST exigió borrar la respuesta por defecto y crearla de nuevo. En la Arquitectura B,
+la configuración fue crear dos métodos ANY con la integración proxy activada y nada más: no hay plantillas, ni regex, ni códigos que declarar.
+
+- ¿Cuál requirió más código de infraestructura en Java?
+
+R/: La Arquitectura B. Tuve que escribir el adaptador OrdersApiHandler, que enruta por método y ruta, lee los parámetros y 
+el cuerpo, convierte el JSON con Jackson, elige los códigos de estado y arma los errores. También hubo que agregar dos
+dependencias nuevas (la librería de eventos de API Gateway y Jackson),
+y el JAR creció bastante. En la Arquitectura A el código de infraestructura se limitó a dos clases de entrada muy 
+simples (GetOrderRequest y SearchOrdersRequest) y tres handlers de una línea.
+
+- ¿Cuál fue más fácil de probar localmente?
+
+La Arquitectura B. Con ella escribí 10 pruebas que construyen eventos a mano y se ejecutan con mvn test, sin AWS, y 
+cubren los códigos 201, 200, 404 y 400, el caso del JSON mal formado y la ruta desconocida. En la Arquitectura A, 
+lo único que puedo probar en local es la lógica del servicio. Las plantillas, las regex y los códigos de estado solo
+se pueden verificar desplegando en AWS y llamando a la API.
+
+- ¿Dónde se definen los códigos de estado en cada enfoque?
+
+R/: En la A, se definen en la consola de API Gateway, y se asignan comparando el texto del mensaje de error con una 
+expresión regular. Por eso, si cambio la frase “does not exist” en una excepción, 
+el 404 deja de funcionar sin que ningún test falle. En la B, se definen dentro del handler, según el tipo de excepción:
+OrderNotFoundException da 404, InvalidOrderException da 400 y cualquier otra da 500.
+
+- ¿Qué pasa si la API crece de 3 operaciones a 30?
+
+R/: En la A, tendría que repetir manualmente todo el trabajo de configuración 30 veces, con 30 plantillas y 30 conjuntos de 
+filas de error, cada uno atado a textos de mensajes. Es lento, propenso a errores y difícil de revisar. En la B, cada operación
+nueva es una ruta más en el handler, pero ese handler puede crecer demasiado si no se organiza. Habría que separarlo en clases por recurso,
+
+- ¿Cuál hace más limpia la lógica de negocio en Java?
+
+R/: En los dos casos, OrderService quedó intacto y sin conocer HTTP. La diferencia está en dónde queda el acoplamiento.
+En la A, el código Java parece limpio, pero en realidad depende del texto de sus mensajes de error, porque una regex en 
+la consola los interpreta. Ese acoplamiento es invisible. En la B, el conocimiento de HTTP se concentra en una sola
+clase, el adaptador, y el servicio se mantiene totalmente ajeno. Por eso considero más limpia la B: la dependencia es 
+explícita y está en un único lugar.
+
+- ¿Cuál sería más fácil de entender para otro desarrollador?
+
+R/: La B. Quien abra el repositorio ve todo el comportamiento de la API en código Java, con pruebas que lo documentan. 
+En la A, para entender qué hace la API hay que entrar a la consola de AWS, leer plantillas y confiar en que la documentación.
+
+- ¿Cuál elegiría para un sistema más grande? ¿Por qué?
+
+R/: La B, la integración proxy con un adaptador. La razón principal es que mantiene las decisiones de HTTP en código 
+que se versiona, se revisa y se prueba, mientras que en la A viven en una consola, sin pruebas y atadas a textos frágiles.
+
+## Predicción antes de implementar DELETE /orders/{id}
+
+Esta predicción se escribió antes de implementar el cambio y antes de consultar al asistente de IA. Se asume que la operación se agrega a la Arquitectura B (Lambda proxy integration con el adaptador HTTP).
+
+## 1. ¿Qué clases Java deberían cambiar?
+
+Debería cambiar OrdersApiHandler, para que acepte el método DELETE y maneje los errores y las respuestas de esta operación. También debería cambiar OrderService, que es donde debe estar la lógica para eliminar un pedido. Pienso agregar dos operaciones: una que elimine un solo pedido y otra que elimine todos los pedidos de un cliente.
+
+## 2. ¿Necesito una nueva función Lambda?
+
+No. Ya existe una sola función Lambda que atiende toda la API (orders-api-handler), así que solo hay que agregar el método DELETE a su código.
+
+## 3. ¿Necesita cambiar la configuración de API Gateway?
+
+Para la Arquitectura B, no. Solo hace falta actualizar el JAR de la Lambda.
+
+## 4. ¿Dónde debería residir la lógica de eliminación?
+
+En OrderService.
+
+## 5. ¿Dónde debería residir la decisión de devolver 204 o 404?
+
+En OrdersApiHandler.
+
+## 6. ¿Qué pruebas deberían agregarse?
+
+- Que se elimine un pedido existente.
+- Que se eliminen los pedidos de un cliente.
+- Que no se elimine ningún otro pedido distinto del que se pidió eliminar.
