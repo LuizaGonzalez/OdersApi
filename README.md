@@ -1,5 +1,6 @@
 # OdersApi
-Order Management API: Java 17 + Maven on AWS Lambda, exposed via API Gateway (mapping templates vs. Lambda proxy). Workshop on architectural responsibilities.
+Order Management API: Java 17 + Maven 
+on AWS Lambda, exposed via API Gateway (mapping templates vs. Lambda proxy). Workshop on architectural responsibilities.
 
 ## Fase 0: Contrato de la API
 
@@ -242,3 +243,36 @@ En OrdersApiHandler.
 - Que se elimine un pedido existente.
 - Que se eliminen los pedidos de un cliente.
 - Que no se elimine ningún otro pedido distinto del que se pidió eliminar.
+
+# DELETE /orders/{id}: predicción frente a la propuesta del asistente
+
+Antes de implementar el DELETE escribí una predicción y le hice commit (docs/prediccion-delete.md). Después le pedí una propuesta al asistente de IA y comparé las dos. Este documento recoge esa comparación y el resultado final.
+
+## Lo que coincidió
+
+Acerté en lo esencial de la arquitectura. Predije que cambiarían OrdersApiHandler y OrderService, y la propuesta del asistente fue la misma. Predije que no hacía falta una nueva función Lambda, porque la Arquitectura B ya tiene una sola función que atiende toda la API, y también que no había que tocar API Gateway, porque el método ANY de /orders/{id} ya enruta el DELETE, de modo que solo había que subir el JAR nuevo. Predije que la lógica de eliminación debía vivir en OrderService y que la decisión entre 204 y 404 debía vivir en OrdersApiHandler, y ambas cosas se confirmaron. En el servicio quedó el hecho de dominio (el pedido existe o no existe, que se expresa con una excepción) y en el handler quedó la traducción a un código HTTP.
+
+## Lo que no coincidió
+
+Primero, el alcance. Mi predicción incluía eliminar también todos los pedidos de un cliente. El enunciado solo pide DELETE /orders/{id}, así que el asistente no lo incluyó. Lo considero una mejora opcional y no una parte del requisito, porque exige decidir cosas que el contrato actual no define, como qué responder si el cliente no tiene pedidos o si conviene permitir un borrado masivo a partir de un parámetro de consulta.
+
+Segundo, las pruebas. Yo había pensado en eliminar un pedido, eliminar los de un cliente y comprobar que no se borra ningún otro. No había incluido el caso que el enunciado exige expresamente, el de un pedido inexistente que debe dar 404. El asistente lo agregó, junto con una comprobación de que, tras borrar un pedido, una consulta posterior ya no lo encuentra. Mi idea de verificar que no se borre otro pedido sí se mantuvo.
+
+Tercero, un detalle que no anticipé. Una respuesta 204 no puede llevar cuerpo, y el método que usa el handler para construir respuestas siempre agrega un cuerpo JSON, así que hizo falta un método aparte, noContent(), que devuelve solo el código de estado. También me faltó mencionar que, aunque no cambie nada en API Gateway, hay que volver a subir el código de la Lambda para que el cambio tenga efecto.
+
+## Qué habría pasado en la Arquitectura A
+
+Mi predicción asumía la Arquitectura B. Si hubiera extendido la A, la respuesta habría sido muy distinta: una nueva función Lambda para el borrado, un método DELETE en /orders/{id} con su plantilla de solicitud, una respuesta 204 declarada en el método y una fila de respuesta de integración para el 404 con su expresión regular y su plantilla de error. Es otro ejemplo de que añadir una operación cuesta mucho más en la A que en la B.
+
+## Resultado en la API desplegada
+
+La API respondió como se esperaba. Creé un pedido y lo eliminé: el DELETE devolvió 204 sin cuerpo. Al consultar el mismo pedido, devolvió 404 con ORDER_NOT_FOUND, y al intentar eliminar un pedido que no existe también devolvió 404 con ORDER_NOT_FOUND.
+
+Un detalle que observé: en la respuesta 204, API Gateway agregó por su cuenta los headers Content-Type: application/json y Content-Length: 0, aunque el handler no devolvió cuerpo. No afecta al comportamiento.
+
+## Conclusión
+
+Mi razonamiento sobre dónde debe vivir cada responsabilidad fue correcto. Donde me quedé corto fue en los casos de prueba y en los detalles propios de HTTP, como que el 204 no lleva cuerpo.
+
+![pruebasDelete.png](evidencia/pruebasDelete.png)
+
